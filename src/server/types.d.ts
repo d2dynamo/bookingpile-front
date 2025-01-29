@@ -32,3 +32,8 @@ export type DayOfMonth =
   | 29
   | 30
   | 31;
+export type BookingStatus =
+  | 'processing'
+  | 'reserved'
+  | 'cancelled'
+  | 'confirmed';

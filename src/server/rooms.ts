@@ -33,7 +33,7 @@ export async function fetchAvailableTimes(
   from?: number,
   to?: number,
   roomIds?: number[]
-) {
+): Promise<ListAvailableRoomsResponse> {
   try {
     const params = new URLSearchParams();
     if (from) params.append('from', from.toString());
