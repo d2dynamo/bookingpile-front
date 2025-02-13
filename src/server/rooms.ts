@@ -1,4 +1,5 @@
-import { ValidHour } from './types';
+import { DayOfMonth, ValidHour } from './types';
+import { fetchClient } from './api';
 
 interface ListRoomsResponseItem {
   id: number;
@@ -8,16 +9,17 @@ interface ListRoomsResponseItem {
 
 export type ListRoomsResponse = ListRoomsResponseItem[];
 
-interface ListAvailableRoomsResponseItem {
-  roomId: number;
-  [key: string]: ValidHour[] | number;
-}
+export type ListAvailableRoomsResponse = {
+  // roomId
+  [key: number]: {
+    // DayOfMonth with array of hours available for that day
+    [key in DayOfMonth]?: ValidHour[];
+  };
+};
 
-export type ListAvailableRoomsResponse = ListAvailableRoomsResponseItem[];
-
-export async function fetchRooms() {
+export async function fetchRooms(): Promise<ListRoomsResponse> {
   try {
-    const response = await fetch('localhost:300/rooms/list');
+    const response = await fetchClient('/rooms/list');
     if (!response.ok) {
       throw new Error('Failed to fetch rooms');
     }
@@ -41,11 +43,12 @@ export async function fetchAvailableTimes(
     if (roomIds && roomIds.length > 0)
       params.append('roomIds', roomIds.join(','));
 
-    const response = await fetch(`/rooms/available?${params.toString()}`);
+    const response = await fetchClient(`/rooms/available?${params.toString()}`);
     if (!response.ok) {
       throw new Error('Failed to fetch available times');
     }
     const availableTimes = await response.json();
+    console.log('availableTimes:', availableTimes);
     return availableTimes;
   } catch (error) {
     console.error('Error fetching available times:', error);

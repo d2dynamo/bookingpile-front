@@ -1,3 +1,4 @@
+import { fetchClient } from './api';
 import { BookingStatus } from './types';
 
 interface CreateBookingRequest {
@@ -19,7 +20,7 @@ export async function createBooking(
   booking: CreateBookingRequest
 ): Promise<CreateBookingResponse> {
   try {
-    const response = await fetch('localhost:3000/booking/create', {
+    const response = await fetchClient('/booking/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -41,7 +42,7 @@ export async function updateBookingStatus(
   booking: UpdateBookingStatus
 ): Promise<void> {
   try {
-    const response = await fetch('localhost:3000/booking/update', {
+    const response = await fetchClient('/booking/update', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

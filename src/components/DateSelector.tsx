@@ -1,40 +1,27 @@
 import React from 'react';
+import { ArrowButton } from './ArrowButton';
 
 interface DateSelectorProps {
-  onChange: (date: Date) => void;
-  selectedDate: Date;
+  setStartDay: (date: Date) => void;
+  startDay: Date;
+  className?: string;
 }
-
-interface ArrowButtonProps {
-  direction: 'left' | 'right';
-  onClick: () => void;
-}
-
-const ArrowButton: React.FC<ArrowButtonProps> = ({ direction, onClick }) => {
-  return (
-    <button
-      onClick={onClick}
-      className="border border-black bg-white text-black w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
-    >
-      {direction === 'left' ? '<' : '>'}
-    </button>
-  );
-};
 
 const DateSelector: React.FC<DateSelectorProps> = ({
-  onChange,
-  selectedDate,
+  setStartDay,
+  startDay,
+  className = '',
 }) => {
   const handlePrevious = () => {
-    const newDate = new Date(selectedDate);
+    const newDate = new Date(startDay);
     newDate.setDate(newDate.getDate() - 1);
-    onChange(newDate);
+    setStartDay(newDate);
   };
 
   const handleNext = () => {
-    const newDate = new Date(selectedDate);
+    const newDate = new Date(startDay);
     newDate.setDate(newDate.getDate() + 1);
-    onChange(newDate);
+    setStartDay(newDate);
   };
 
   const formatDateRange = (date: Date) => {
@@ -49,14 +36,16 @@ const DateSelector: React.FC<DateSelectorProps> = ({
     const startStr = startDate.toLocaleDateString('sv-SE', options);
     const endStr = endDate.toLocaleDateString('sv-SE', options);
 
-    return `${startStr} - ${endStr}`;
+    return `${startStr} - ${endStr}`.replace(/[,|.]/g, '');
   };
 
   return (
-    <div className="flex items-center justify-between w-full">
-      <ArrowButton direction="left" onClick={handlePrevious} />
-      <p>{formatDateRange(selectedDate)}</p>
-      <ArrowButton direction="right" onClick={handleNext} />
+    <div
+      className={`flex items-center justify-between text-black bg-inherit ${className}`}
+    >
+      <ArrowButton direction="left" size="1.25rem" onClick={handlePrevious} />
+      <p>{formatDateRange(startDay)}</p>
+      <ArrowButton direction="right" size="1.25rem" onClick={handleNext} />
     </div>
   );
 };
