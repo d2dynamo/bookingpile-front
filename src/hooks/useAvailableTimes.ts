@@ -15,9 +15,10 @@ export const useAvailableTimes = (startDay: Date, selectedRoom: number[]) => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        const sd = new Date(startDay);
         const availableTimesData = await fetchAvailableTimes(
-          unixSec(startDay),
-          unixSec(startDay.setDate(startDay.getDate() + 2)),
+          unixSec(sd),
+          unixSec(sd.setDate(sd.getDate() + 2)),
           selectedRoom
         );
         setAvailableTimes(availableTimesData);

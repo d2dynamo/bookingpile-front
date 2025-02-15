@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Rooms, SelectedRooms } from '@/pages/rooms';
 
 interface RoomSelectProps {
@@ -14,8 +14,15 @@ const RoomSelect: React.FC<RoomSelectProps> = ({
   setSelectedRooms,
   setShowWindow,
 }) => {
+  const [tempSelectedRooms, setTempSelectedRooms] =
+    useState<SelectedRooms>(selectedRooms);
+
+  useEffect(() => {
+    setTempSelectedRooms(selectedRooms);
+  }, [selectedRooms]);
+
   const handleCheckboxChange = (roomId: number) => {
-    const updatedSelectedRooms = new Set(selectedRooms);
+    const updatedSelectedRooms = new Set(tempSelectedRooms);
 
     if (updatedSelectedRooms.has(roomId)) {
       updatedSelectedRooms.delete(roomId);
@@ -23,7 +30,12 @@ const RoomSelect: React.FC<RoomSelectProps> = ({
       updatedSelectedRooms.add(roomId);
     }
 
-    setSelectedRooms(Array.from(updatedSelectedRooms));
+    setTempSelectedRooms(Array.from(updatedSelectedRooms));
+  };
+
+  const handleSelectButton = () => {
+    setSelectedRooms(tempSelectedRooms);
+    setShowWindow(false);
   };
 
   return (
@@ -43,7 +55,7 @@ const RoomSelect: React.FC<RoomSelectProps> = ({
               </span>
               <input
                 type="checkbox"
-                checked={selectedRooms.includes(room.id)}
+                checked={tempSelectedRooms.includes(room.id)}
                 onChange={() => handleCheckboxChange(room.id)}
                 className="ml-2"
               />
@@ -52,7 +64,7 @@ const RoomSelect: React.FC<RoomSelectProps> = ({
         </div>
         <div className="flex gap-2 mt-4">
           <button
-            onClick={() => setSelectedRooms(selectedRooms)}
+            onClick={() => handleSelectButton()}
             className="flex-1 bg-black text-white py-2 px-4 rounded"
           >
             Välj

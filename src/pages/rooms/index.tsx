@@ -7,29 +7,45 @@ import Button from '@/components/Button';
 import RoomSelect from '@/components/RoomSelect';
 import { ListAvailableRoomsResponse, ListRoomsResponse } from '@/server/rooms';
 import LinkButton from '@/components/LinkButton';
+import { DayOfMonth, ValidHour } from '@/server/types';
 
 export type AvailableTimes = ListAvailableRoomsResponse;
 export type Rooms = ListRoomsResponse;
 export type SelectedRooms = Array<number>;
 
+export interface SelectedTimeSlot {
+  roomId: number;
+  day: DayOfMonth;
+  hour: ValidHour;
+}
+
 /**
  *
- * @param day days from current day of month
+ * @param day set day
  * @param hour set hour
  * @param minute set minute
  */
-const createDate = (day: number, hour: number, minute: number): Date => {
-  const date = new Date();
-  console.log('creating date', date.getDate());
-  date.setDate(date.getDate() + day);
-  date.setHours(hour, minute, 0, 0);
-  return new Date(date);
+const createDate = (day: number | null, hour: number, minute: number): Date => {
+  const now = new Date();
+  // Use the Date constructor to create a date with explicit year, month, and day.
+  const newd = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    day ?? now.getDate(),
+    hour,
+    minute,
+    0,
+    0
+  );
+  return newd;
 };
 
 const RoomsPage: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<SelectedRooms>([]);
-  const [startDay, setStartDay] = useState(createDate(0, 8, 0));
+  const [startDay, setStartDay] = useState(createDate(null, 8, 0));
   const [showRoomSelect, setShowRoomSelect] = useState(false);
+  const [selectedTimeSlot, setSelectedTimeSlot] =
+    useState<SelectedTimeSlot | null>(null);
 
   const { rooms, loading: roomsLoading, error: roomsError } = useRooms();
   const {
@@ -37,7 +53,6 @@ const RoomsPage: React.FC = () => {
     loading: timesLoading,
     error: timesError,
   } = useAvailableTimes(startDay, selectedRoom);
-  console.log('startDayInit', startDay.getDate());
 
   const handleRoomChange = (selected: Array<number | string>) => {
     const updatedSelectedRooms = new Set<number>();
@@ -111,6 +126,8 @@ const RoomsPage: React.FC = () => {
         startDay={startDay}
         availableTimes={availableTimes}
         rooms={rooms}
+        selectedTimeSlot={selectedTimeSlot}
+        setSelectedTimeSlot={setSelectedTimeSlot}
         className="flex-auto overflow-y-auto m-2"
       />
       <LinkButton path="/book" name="Nästa" className="mx-10 my-2" />
