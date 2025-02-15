@@ -33,7 +33,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       className={`cursor-pointer flex flex-col text-sm border border-green-800 rounded-md p-1 mb-2 mx-1 shadow-sm ${bgClass} text-black dark:bg-gray-600 dark:border-l-violet-900 dark:text-white ${className}`}
     >
       <div className="flex flex-row justify-between items-center">
-        <p className="font-bold">{roomName}</p>
+        <p>{roomName}</p>
         <p>({roomCapacity})</p>
       </div>
       <p>{formatTime(startTime)}</p>

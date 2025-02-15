@@ -7,7 +7,8 @@ import Button from '@/components/Button';
 import RoomSelect from '@/components/RoomSelect';
 import { ListAvailableRoomsResponse, ListRoomsResponse } from '@/server/rooms';
 import LinkButton from '@/components/LinkButton';
-import { DayOfMonth, ValidHour } from '@/server/types';
+import type { DayOfMonth, ValidHour } from '@/server/types';
+import { createBooking } from '@/server/booking';
 
 export type AvailableTimes = ListAvailableRoomsResponse;
 export type Rooms = ListRoomsResponse;
@@ -40,8 +41,12 @@ const createDate = (day: number | null, hour: number, minute: number): Date => {
   return newd;
 };
 
+const serializeTimeSlot = (timeSlot: SelectedTimeSlot): string => {
+  return `${timeSlot.roomId}-${timeSlot.day}-${timeSlot.hour}`;
+};
+
 const RoomsPage: React.FC = () => {
-  const [selectedRoom, setSelectedRoom] = useState<SelectedRooms>([]);
+  const [selectedRooms, setSelectedRooms] = useState<SelectedRooms>([]);
   const [startDay, setStartDay] = useState(createDate(null, 8, 0));
   const [showRoomSelect, setShowRoomSelect] = useState(false);
   const [selectedTimeSlot, setSelectedTimeSlot] =
@@ -52,7 +57,7 @@ const RoomsPage: React.FC = () => {
     availableTimes,
     loading: timesLoading,
     error: timesError,
-  } = useAvailableTimes(startDay, selectedRoom);
+  } = useAvailableTimes(startDay, selectedRooms);
 
   const handleRoomChange = (selected: Array<number | string>) => {
     const updatedSelectedRooms = new Set<number>();
@@ -72,7 +77,7 @@ const RoomsPage: React.FC = () => {
       }
     });
 
-    setSelectedRoom(Array.from(updatedSelectedRooms));
+    setSelectedRooms(Array.from(updatedSelectedRooms));
   };
 
   if (roomsLoading || timesLoading) {
@@ -98,8 +103,8 @@ const RoomsPage: React.FC = () => {
           className="relative inline-flex items-stretch w-1/3 ml-0 justify-between px-2 py-2 bg-inherit border-gray-400 border shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300"
         >
           <span className="text-center text-black">
-            {selectedRoom.length > 0
-              ? `${selectedRoom.length} valda rum`
+            {selectedRooms.length > 0
+              ? `${selectedRooms.length} valda rum`
               : 'Mötes rum'}
           </span>
           <svg
@@ -128,13 +133,20 @@ const RoomsPage: React.FC = () => {
         rooms={rooms}
         selectedTimeSlot={selectedTimeSlot}
         setSelectedTimeSlot={setSelectedTimeSlot}
-        className="flex-auto overflow-y-auto m-2"
+        className="flex-auto m-2"
       />
-      <LinkButton path="/book" name="Nästa" className="mx-10 my-2" />
+      <LinkButton
+        path={`/book?slot=${
+          selectedTimeSlot ? serializeTimeSlot(selectedTimeSlot) : ''
+        }`}
+        onClick={() => {}}
+        name="Nästa"
+        className="mx-10 my-2"
+      />
       {showRoomSelect && (
         <RoomSelect
           rooms={rooms}
-          selectedRooms={selectedRoom}
+          selectedRooms={selectedRooms}
           setSelectedRooms={handleRoomChange}
           setShowWindow={setShowRoomSelect}
         />

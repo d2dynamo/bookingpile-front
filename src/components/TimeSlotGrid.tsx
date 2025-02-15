@@ -91,7 +91,7 @@ const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
 
   return (
     <div
-      className={`bg-gray-200 text-black border border-gray-400 rounded-lg dark:border-gray-500 ${className} scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200`}
+      className={`bg-gray-200 text-black border border-gray-400 rounded-lg dark:border-gray-500 ${className} overflow-y-scroll scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400`}
     >
       <div className="grid grid-cols-3">
         {dates.map((date, index) => renderHeaderColumn(date, index))}

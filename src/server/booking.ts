@@ -3,7 +3,6 @@ import { BookingStatus } from './types';
 
 interface CreateBookingRequest {
   roomId: number;
-  reservationName: string;
   start: number;
 }
 
