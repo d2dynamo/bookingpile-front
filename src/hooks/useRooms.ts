@@ -24,3 +24,5 @@ export const useRooms = () => {
 
   return { rooms, loading, error };
 };
+
+export default useRooms;

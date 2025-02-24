@@ -6,7 +6,7 @@ export default function Home() {
       <h1 className="self-start text-7xl text-black dark:text-gray-100 m-10">
         Boka ett rum
       </h1>
-      <LinkButton path="/rooms" name="Boka" className="mb-8 mx-10" />
+      <LinkButton href="/rooms" name="Boka" className="mb-8 mx-10" />
     </main>
   );
 }

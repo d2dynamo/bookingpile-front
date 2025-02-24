@@ -5,7 +5,7 @@ import {
 } from '@/server/rooms';
 import { unixSec } from '@/util/date';
 
-export const useAvailableTimes = (startDay: Date, selectedRoom: number[]) => {
+const useAvailableTimes = (startDay: Date, selectedRoom: number[]) => {
   const [availableTimes, setAvailableTimes] =
     useState<ListAvailableRoomsResponse>({});
   const [loading, setLoading] = useState(true);
@@ -34,3 +34,5 @@ export const useAvailableTimes = (startDay: Date, selectedRoom: number[]) => {
 
   return { availableTimes, loading, error };
 };
+
+export default useAvailableTimes;

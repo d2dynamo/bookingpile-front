@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { useRooms } from '@/hooks/useRooms';
-import { useAvailableTimes } from '@/hooks/useAvailableTimes';
+import { useRouter } from 'next/router';
+
+import { useAvailableTimes, useBooking, useRooms } from '@/hooks';
 import TimeSlotGrid from '@/components/TimeSlotGrid';
 import DateSelector from '@/components/DateSelector';
 import Button from '@/components/Button';
 import RoomSelect from '@/components/RoomSelect';
 import { ListAvailableRoomsResponse, ListRoomsResponse } from '@/server/rooms';
-import LinkButton from '@/components/LinkButton';
 import type { DayOfMonth, ValidHour } from '@/server/types';
-import { createBooking } from '@/server/booking';
+import ErrorAlert from '@/components/ErrorAlert';
 
 export type AvailableTimes = ListAvailableRoomsResponse;
 export type Rooms = ListRoomsResponse;
@@ -26,31 +26,37 @@ export interface SelectedTimeSlot {
  * @param hour set hour
  * @param minute set minute
  */
-const createDate = (day: number | null, hour: number, minute: number): Date => {
+const createDate = (opts: {
+  hour: number;
+  minute: number;
+  day?: number;
+}): Date => {
   const now = new Date();
-  // Use the Date constructor to create a date with explicit year, month, and day.
+
   const newd = new Date(
     now.getFullYear(),
     now.getMonth(),
-    day ?? now.getDate(),
-    hour,
-    minute,
+    opts.day ?? now.getDate(),
+    opts.hour,
+    opts.minute,
     0,
     0
   );
   return newd;
 };
 
-const serializeTimeSlot = (timeSlot: SelectedTimeSlot): string => {
-  return `${timeSlot.roomId}-${timeSlot.day}-${timeSlot.hour}`;
-};
+// const serializeTimeSlot = (timeSlot: SelectedTimeSlot): string => {
+//   return `${timeSlot.roomId}-${timeSlot.day}-${timeSlot.hour}`;
+// };
 
 const RoomsPage: React.FC = () => {
+  const router = useRouter();
   const [selectedRooms, setSelectedRooms] = useState<SelectedRooms>([]);
-  const [startDay, setStartDay] = useState(createDate(null, 8, 0));
+  const [startDay, setStartDay] = useState(createDate({ hour: 8, minute: 0 }));
   const [showRoomSelect, setShowRoomSelect] = useState(false);
   const [selectedTimeSlot, setSelectedTimeSlot] =
     useState<SelectedTimeSlot | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
 
   const { rooms, loading: roomsLoading, error: roomsError } = useRooms();
   const {
@@ -58,6 +64,21 @@ const RoomsPage: React.FC = () => {
     loading: timesLoading,
     error: timesError,
   } = useAvailableTimes(startDay, selectedRooms);
+  const bookingH = useBooking();
+
+  const startBooking = async () => {
+    if (selectedTimeSlot) {
+      const { roomId, day, hour } = selectedTimeSlot;
+
+      const booking = await bookingH.create(
+        roomId,
+        createDate({ hour, minute: 0, day })
+      );
+      console.log('Booking created:', booking);
+    } else {
+      console.error('No time slot selected');
+    }
+  };
 
   const handleRoomChange = (selected: Array<number | string>) => {
     const updatedSelectedRooms = new Set<number>();
@@ -73,6 +94,7 @@ const RoomsPage: React.FC = () => {
           console.error('Invalid select room id:', id);
         }
       } else {
+        setError({ name: 'Invalid room id', message: 'Invalid room id' });
         console.error('Invalid select room id:', id);
       }
     });
@@ -89,7 +111,7 @@ const RoomsPage: React.FC = () => {
   }
 
   if (roomsError || timesError) {
-    return <div>Error loading data</div>;
+    setError(roomsError || timesError);
   }
 
   return (
@@ -135,20 +157,44 @@ const RoomsPage: React.FC = () => {
         setSelectedTimeSlot={setSelectedTimeSlot}
         className="flex-auto m-2"
       />
-      <LinkButton
-        path={`/book?slot=${
-          selectedTimeSlot ? serializeTimeSlot(selectedTimeSlot) : ''
-        }`}
-        onClick={() => {}}
-        name="Nästa"
+      <Button
+        onClick={async () => {
+          try {
+            if (!selectedTimeSlot) {
+              throw new Error('No time slot selected');
+            }
+
+            await startBooking();
+            router.push(`/book?bookingId=${bookingH.data?.bookingId}`);
+          } catch (er) {
+            if (er instanceof Error) {
+              setError(er);
+            } else {
+              setError({
+                name: 'Unknown error',
+                message: 'Unknown error ocurred, try again.',
+              });
+              console.error(er);
+            }
+          }
+        }}
         className="mx-10 my-2"
-      />
+      >
+        Nästa
+      </Button>
       {showRoomSelect && (
         <RoomSelect
           rooms={rooms}
           selectedRooms={selectedRooms}
           setSelectedRooms={handleRoomChange}
           setShowWindow={setShowRoomSelect}
+        />
+      )}
+      {error && (
+        <ErrorAlert
+          title={error.name}
+          description={error.message}
+          acknowledge={() => setError(null)}
         />
       )}
     </main>

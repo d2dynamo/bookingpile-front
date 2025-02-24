@@ -4,7 +4,7 @@
  */
 export const unixSec = (date: Date | number): number => {
   if (date instanceof Date) {
-    return Math.floor(date.getTime() / 1000);
+    return date.getSeconds();
   } else if (typeof date === 'number') {
     if (date > 9999999999) {
       return Math.floor(date / 1000);

@@ -10,9 +10,32 @@ interface CreateBookingResponse {
   bookingId: number;
 }
 
-interface UpdateBookingStatus {
+interface UpdateBooking {
   bookingId: number;
+  status?: BookingStatus;
+  reservationName?: string;
+}
+
+interface Booking {
+  bookingId: number;
+  roomId: number;
+  start: number;
   status: BookingStatus;
+  reservationName?: string;
+}
+
+export async function getBooking(bookingId: number): Promise<Booking> {
+  try {
+    const response = await fetchClient(`/booking/get?bookingId=${bookingId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch booking');
+    }
+    const booking = await response.json();
+    return booking;
+  } catch (error) {
+    console.error('Error fetching booking:', error);
+    throw error;
+  }
 }
 
 export async function createBooking(
@@ -37,22 +60,20 @@ export async function createBooking(
   }
 }
 
-export async function updateBookingStatus(
-  booking: UpdateBookingStatus
-): Promise<void> {
+export async function updateBooking(input: UpdateBooking): Promise<void> {
   try {
     const response = await fetchClient('/booking/update', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(booking),
+      body: JSON.stringify(input),
     });
     if (!response.ok) {
       throw new Error('Failed to update booking status');
     }
   } catch (error) {
-    console.error('Error updating booking status:', error);
+    console.error('Error updating booking:', error);
     throw error;
   }
 }
