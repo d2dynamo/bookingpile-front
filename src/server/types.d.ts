@@ -32,8 +32,15 @@ export type DayOfMonth =
   | 29
   | 30
   | 31;
+export type AvailableTimeKey = `${Month}-${DayOfMonth}`;
 export type BookingStatus =
   | 'processing'
   | 'reserved'
   | 'cancelled'
   | 'confirmed';
+
+export interface Booking {
+  id: number;
+  status: BookingStatus;
+  reservationName?: string;
+}

@@ -1,31 +1,32 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
-import { useBooking } from '@/hooks';
 import LinkButton from '@/components/LinkButton';
 import Button from '@/components/Button';
+import { ErrorState } from '@/util';
+import { getBooking, updateBooking } from '@/server/booking';
+import { Booking } from '@/server/types';
 
 const BookPage: React.FC = () => {
   const [error, setError] = useState<ErrorState | null>(null);
   const [bookSuccess, setBookSuccess] = useState(false);
   const [reservationName, setReservationName] = useState<string | null>(null);
+  const [bookingData, setBookingData] = useState<Booking | null>(null);
 
   const router = useRouter();
-  const bookingId = Number(router.query.bookingId);
-
-  if (isNaN(bookingId) || typeof bookingId !== 'number') {
-    setError(Error('Invalid bookingId'));
-  }
-
-  const booking = useBooking(bookingId);
 
   const doBooking = async () => {
     try {
-      if (!reservationName) {
-        throw Error('Reservation name is required');
+      if (!bookingData || !bookingData.id) {
+        throw new ErrorState('Booking not initialized');
       }
 
-      await booking.update({
+      if (!reservationName) {
+        throw new ErrorState('Reservation name is required');
+      }
+
+      await updateBooking({
+        bookingId: bookingData.id,
         reservationName,
         status: 'confirmed',
       });
@@ -34,21 +35,49 @@ const BookPage: React.FC = () => {
     } catch (e) {
       if (e instanceof Error) {
         setError(e);
-      } else {
+        return;
+      }
+      setError({
+        name: 'Unknown error',
+        message: 'Unknown error has ocurred, try again.',
+      });
+      console.error('Unknown error:', e);
+    }
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        console.log(router.query);
+        const bookingId = Number(router.query.bookingId);
+
+        if (isNaN(bookingId) || typeof bookingId !== 'number') {
+          console.error('Invalid bookingId:', bookingId, typeof bookingId);
+          router.push('/rooms');
+        }
+
+        const result = await getBooking(bookingId);
+        if (!result) {
+          console.error('Failed to get booking:', bookingId);
+          router.push('/rooms');
+        }
+
+        setBookingData(result);
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e);
+          return;
+        }
         setError({
           name: 'Unknown error',
           message: 'Unknown error has ocurred, try again.',
         });
         console.error('Unknown error:', e);
       }
-    }
-  };
+    };
 
-  useEffect(() => {
-    if (booking.error) {
-      setError(booking.error);
-    }
-  }, [error]);
+    init();
+  }, []);
 
   if (error) {
     return (

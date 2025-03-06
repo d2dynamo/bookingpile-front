@@ -1,4 +1,4 @@
-import { DayOfMonth, ValidHour } from './types';
+import { AvailableTimeKey, ValidHour } from './types';
 import { fetchClient } from './api';
 
 interface ListRoomsResponseItem {
@@ -10,11 +10,8 @@ interface ListRoomsResponseItem {
 export type ListRoomsResponse = ListRoomsResponseItem[];
 
 export type ListAvailableRoomsResponse = {
-  // roomId
-  [key: number]: {
-    // DayOfMonth with array of hours available for that day
-    [key in DayOfMonth]?: ValidHour[];
-  };
+  // key: roomId. Value: Array of start times in unix seconds
+  [key: number]: Array<number>;
 };
 
 export async function fetchRooms(): Promise<ListRoomsResponse> {
@@ -26,7 +23,6 @@ export async function fetchRooms(): Promise<ListRoomsResponse> {
     const rooms = await response.json();
     return rooms;
   } catch (error) {
-    console.error('Error fetching rooms:', error);
     throw error;
   }
 }
@@ -48,10 +44,8 @@ export async function fetchAvailableTimes(
       throw new Error('Failed to fetch available times');
     }
     const availableTimes = await response.json();
-    console.log('availableTimes:', availableTimes);
     return availableTimes;
   } catch (error) {
-    console.error('Error fetching available times:', error);
     throw error;
   }
 }

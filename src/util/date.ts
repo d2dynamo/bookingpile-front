@@ -2,17 +2,18 @@
  * @param date Date object, Unix milliseconds or Unix seconds.
  * @returns unix seconds
  */
-export const unixSec = (date: Date | number): number => {
-  if (date instanceof Date) {
-    return date.getSeconds();
-  } else if (typeof date === 'number') {
-    if (date > 9999999999) {
-      return Math.floor(date / 1000);
-    } else if (date > 0) {
-      return date;
-    }
+export const unixSec = (input: Date | number): number => {
+  if (input instanceof Date) {
+    return Math.floor(input.getTime() / 1000);
   }
-  throw new Error(
-    'Invalid input: expected a Date object, Unix milliseconds, or Unix seconds.'
-  );
+
+  if (typeof input !== 'number') {
+    throw new Error('Input must be a Date object or a number');
+  }
+
+  if (input > 10000000000) {
+    return Math.floor(input / 1000);
+  }
+
+  return input;
 };

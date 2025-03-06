@@ -17,7 +17,7 @@ interface UpdateBooking {
 }
 
 interface Booking {
-  bookingId: number;
+  id: number;
   roomId: number;
   start: number;
   status: BookingStatus;
@@ -26,14 +26,13 @@ interface Booking {
 
 export async function getBooking(bookingId: number): Promise<Booking> {
   try {
-    const response = await fetchClient(`/booking/get?bookingId=${bookingId}`);
+    const response = await fetchClient(`/booking/get/${bookingId}`);
     if (!response.ok) {
       throw new Error('Failed to fetch booking');
     }
     const booking = await response.json();
     return booking;
   } catch (error) {
-    console.error('Error fetching booking:', error);
     throw error;
   }
 }
@@ -49,13 +48,18 @@ export async function createBooking(
       },
       body: JSON.stringify(booking),
     });
-    if (!response.ok) {
-      throw new Error('Failed to create booking');
+
+    if (response.status < 200 || response.status >= 400) {
+      throw new Error(await response.text());
     }
-    const { bookingId } = await response.json();
-    return { bookingId };
+    const body = await response.json();
+
+    if (!body.bookingId) {
+      throw new Error('Failed to create booking, no bookingId returned');
+    }
+
+    return { bookingId: body.bookingId };
   } catch (error) {
-    console.error('Error creating booking:', error);
     throw error;
   }
 }
@@ -73,7 +77,6 @@ export async function updateBooking(input: UpdateBooking): Promise<void> {
       throw new Error('Failed to update booking status');
     }
   } catch (error) {
-    console.error('Error updating booking:', error);
     throw error;
   }
 }

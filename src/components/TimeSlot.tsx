@@ -1,10 +1,9 @@
 import React from 'react';
 
 interface TimeSlotProps {
-  sKey: string;
+  sKey: string; // roomId with unix seconds of startTime
   roomName: string;
   roomCapacity: number;
-  startTime: number;
   onClick: (sk: string) => void;
   isSelected?: boolean;
   className?: string;
@@ -14,15 +13,14 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   sKey,
   roomName,
   roomCapacity,
-  startTime,
   onClick,
   isSelected,
   className = '',
 }) => {
-  const formatTime = (hour: number) => {
-    const start = `${hour.toString().padStart(2, '0')}:00`;
-    const end = `${(hour + 1).toString().padStart(2, '0')}:00`;
-    return `${start}-${end}`;
+  const fTime = () => {
+    const startTime = parseInt(sKey.split('-')[1]);
+    const startHour = new Date(startTime * 1000).getHours();
+    return `${startHour}:00-${startHour + 1}:00`;
   };
 
   const bgClass = isSelected ? 'bg-blue-200' : 'bg-gray-50';
@@ -36,7 +34,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
         <p>{roomName}</p>
         <p>({roomCapacity})</p>
       </div>
-      <p>{formatTime(startTime)}</p>
+      <p>{fTime()}</p>
     </div>
   );
 };

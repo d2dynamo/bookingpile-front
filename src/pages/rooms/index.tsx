@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
-import { useAvailableTimes, useBooking, useRooms } from '@/hooks';
+import { useRooms } from '@/hooks';
 import TimeSlotGrid from '@/components/TimeSlotGrid';
 import DateSelector from '@/components/DateSelector';
 import Button from '@/components/Button';
 import RoomSelect from '@/components/RoomSelect';
-import { ListAvailableRoomsResponse, ListRoomsResponse } from '@/server/rooms';
-import type { DayOfMonth, ValidHour } from '@/server/types';
+import {
+  fetchAvailableTimes,
+  fetchRooms,
+  ListAvailableRoomsResponse,
+  ListRoomsResponse,
+} from '@/server/rooms';
 import ErrorAlert from '@/components/ErrorAlert';
+import { ErrorState, unixSec } from '@/util';
+import { createBooking } from '@/server';
 
 export type AvailableTimes = ListAvailableRoomsResponse;
 export type Rooms = ListRoomsResponse;
@@ -16,34 +22,8 @@ export type SelectedRooms = Array<number>;
 
 export interface SelectedTimeSlot {
   roomId: number;
-  day: DayOfMonth;
-  hour: ValidHour;
+  start: number; // unix seconds
 }
-
-/**
- *
- * @param day set day
- * @param hour set hour
- * @param minute set minute
- */
-const createDate = (opts: {
-  hour: number;
-  minute: number;
-  day?: number;
-}): Date => {
-  const now = new Date();
-
-  const newd = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    opts.day ?? now.getDate(),
-    opts.hour,
-    opts.minute,
-    0,
-    0
-  );
-  return newd;
-};
 
 // const serializeTimeSlot = (timeSlot: SelectedTimeSlot): string => {
 //   return `${timeSlot.roomId}-${timeSlot.day}-${timeSlot.hour}`;
@@ -52,66 +32,166 @@ const createDate = (opts: {
 const RoomsPage: React.FC = () => {
   const router = useRouter();
   const [selectedRooms, setSelectedRooms] = useState<SelectedRooms>([]);
-  const [startDay, setStartDay] = useState(createDate({ hour: 8, minute: 0 }));
+  const [startDay, setStartDay] = useState(
+    new Date(new Date().setHours(7, 0, 0, 0))
+  );
   const [showRoomSelect, setShowRoomSelect] = useState(false);
   const [selectedTimeSlot, setSelectedTimeSlot] =
     useState<SelectedTimeSlot | null>(null);
   const [error, setError] = useState<ErrorState | null>(null);
-
-  const { rooms, loading: roomsLoading, error: roomsError } = useRooms();
-  const {
-    availableTimes,
-    loading: timesLoading,
-    error: timesError,
-  } = useAvailableTimes(startDay, selectedRooms);
-  const bookingH = useBooking();
+  const [availableTimes, setAvailableTimes] =
+    useState<ListAvailableRoomsResponse>({});
+  const [rooms, setRooms] = useState<Rooms>([]);
+  const [loading, setLoading] = useState(false);
 
   const startBooking = async () => {
-    if (selectedTimeSlot) {
-      const { roomId, day, hour } = selectedTimeSlot;
+    try {
+      if (!selectedTimeSlot) {
+        window.alert('No time slot selected');
+        return;
+      }
 
-      const booking = await bookingH.create(
+      const { roomId, start } = selectedTimeSlot;
+
+      const result = await createBooking({
         roomId,
-        createDate({ hour, minute: 0, day })
-      );
-      console.log('Booking created:', booking);
-    } else {
-      console.error('No time slot selected');
+        start,
+      });
+
+      if (!result.bookingId) {
+        throw new ErrorState('Failed to create booking');
+      }
+
+      return result.bookingId;
+    } catch (e) {
+      throw e;
     }
   };
 
   const handleRoomChange = (selected: Array<number | string>) => {
-    const updatedSelectedRooms = new Set<number>();
+    try {
+      const updatedSelectedRooms = new Set<number>();
 
-    selected.forEach((id) => {
-      if (typeof id === 'number') {
-        updatedSelectedRooms.add(id);
-      } else if (typeof id === 'string') {
-        const numericId = parseInt(id, 10);
-        if (!isNaN(numericId)) {
+      selected.forEach((id) => {
+        if (typeof id === 'number') {
+          updatedSelectedRooms.add(id);
+        } else if (typeof id === 'string') {
+          const numericId = parseInt(id, 10);
+
+          if (isNaN(numericId)) {
+            setError({
+              name: 'invalid room',
+              message: `Invalid room id: ${id}`,
+            });
+            return;
+          }
+
           updatedSelectedRooms.add(numericId);
         } else {
+          setError({ name: 'Invalid room id', message: 'Invalid room id' });
           console.error('Invalid select room id:', id);
         }
-      } else {
-        setError({ name: 'Invalid room id', message: 'Invalid room id' });
-        console.error('Invalid select room id:', id);
-      }
-    });
+      });
 
-    setSelectedRooms(Array.from(updatedSelectedRooms));
+      setSelectedRooms(Array.from(updatedSelectedRooms));
+    } catch (er) {
+      if (er instanceof Error) {
+        setError(er);
+        return;
+      }
+      setError({
+        name: 'Unknown error',
+        message: 'Unknown error ocurred, try again.',
+      });
+      console.error(er);
+    }
   };
 
-  if (roomsLoading || timesLoading) {
+  const handleNextPage = async () => {
+    try {
+      if (!selectedTimeSlot) {
+        throw new ErrorState('No time slot selected');
+      }
+
+      const bookingId = await startBooking();
+
+      router.push(`/book?bookingId=${bookingId}`);
+    } catch (er) {
+      if (er instanceof Error) {
+        setError(er);
+        return;
+      }
+      setError({
+        name: 'Unknown error',
+        message: 'Unknown error ocurred, try again.',
+      });
+      console.error(er);
+    }
+  };
+
+  // init
+  useEffect(() => {
+    const init = async () => {
+      try {
+        setLoading(true);
+        const roomsData = await fetchRooms();
+        setRooms(roomsData);
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e);
+          return;
+        }
+        setError({
+          name: 'Unknown error',
+          message: 'Unknown error ocurred, try again.',
+        });
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    init();
+  }, []);
+
+  useEffect(() => {
+    const re = async () => {
+      try {
+        console.log('fetch availabletimes');
+        setLoading(true);
+        const sd = new Date(startDay);
+
+        const availableTimesData = await fetchAvailableTimes(
+          unixSec(sd),
+          unixSec(sd.setDate(sd.getDate() + 2)),
+          selectedRooms
+        );
+        console.log('availableTimesData', availableTimesData);
+        setAvailableTimes(availableTimesData);
+      } catch (e) {
+        if (e instanceof Error) {
+          setError(e);
+        } else {
+          setError({
+            name: 'Unknown error',
+            message: 'Unknown error ocurred, try again.',
+          });
+          console.error(e);
+        }
+      } finally {
+        setLoading(false);
+        console.log('refreshed availableTimes');
+      }
+    };
+    re();
+  }, [selectedRooms]);
+
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
       </div>
     );
-  }
-
-  if (roomsError || timesError) {
-    setError(roomsError || timesError);
   }
 
   return (
@@ -157,29 +237,7 @@ const RoomsPage: React.FC = () => {
         setSelectedTimeSlot={setSelectedTimeSlot}
         className="flex-auto m-2"
       />
-      <Button
-        onClick={async () => {
-          try {
-            if (!selectedTimeSlot) {
-              throw new Error('No time slot selected');
-            }
-
-            await startBooking();
-            router.push(`/book?bookingId=${bookingH.data?.bookingId}`);
-          } catch (er) {
-            if (er instanceof Error) {
-              setError(er);
-            } else {
-              setError({
-                name: 'Unknown error',
-                message: 'Unknown error ocurred, try again.',
-              });
-              console.error(er);
-            }
-          }
-        }}
-        className="mx-10 my-2"
-      >
+      <Button onClick={handleNextPage} className="mx-10 my-2">
         Nästa
       </Button>
       {showRoomSelect && (

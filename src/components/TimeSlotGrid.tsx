@@ -1,7 +1,7 @@
 import React from 'react';
 import TimeSlot from './TimeSlot';
 import type { AvailableTimes, Rooms, SelectedTimeSlot } from '@/pages/rooms';
-import { DayOfMonth, ValidHour } from '@/server/types';
+import { AvailableTimeKey } from '@/server/types';
 
 interface TimeSlotGridProps {
   startDay: Date;
@@ -46,45 +46,42 @@ const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   );
 
   const clickTimeSlot = (k: string) => {
-    const [rid, d, h] = k.split('-');
+    const [rid, s] = k.split('-');
     const roomId = parseInt(rid, 10);
-    const day = parseInt(d, 10) as DayOfMonth;
-    const hour = parseInt(h, 10) as ValidHour;
-    setSelectedTimeSlot({ roomId, day, hour });
+    const start = parseInt(s, 10);
+    setSelectedTimeSlot({ roomId, start });
   };
 
   const renderTimeSlotColumn = (date: Date, index: number) => (
-    console.log(`rendering timeslot column for day ${date.getDate()}`),
-    (
-      <div
-        key={index}
-        className="flex flex-col items-stretch p-2 border-r border-gray-400"
-      >
-        {Object.entries(availableTimes).map(([roomId, days]) => {
-          const hours = days[date.getDate() as DayOfMonth];
-          console.log(
-            `creating timeslots for room ${roomId} with hours ${hours}`
-          );
-          if (!hours) return null;
-          const room = rooms.find((room) => room.id === parseInt(roomId, 10));
-          return hours.map((hour) => (
+    <div
+      key={index}
+      className="flex flex-col items-stretch p-2 border-r border-gray-400"
+    >
+      {Object.entries(availableTimes).map(([roomId, startTimes]) => {
+        if (!startTimes || !startTimes.length) {
+          return null;
+        }
+        const room = rooms.find((room) => room.id === parseInt(roomId, 10));
+        return startTimes.map((t) => {
+          if (new Date(t * 1000).getDate() !== date.getDate()) {
+            return null;
+          }
+          return (
             <TimeSlot
-              key={`${roomId}-${date.getDate()}-${hour}`}
-              sKey={`${roomId}-${date.getDate()}-${hour}`} //same as key
+              key={`${roomId}-${t}`} //same as sKey
+              sKey={`${roomId}-${t}`} //same as key
               roomName={room?.name || ''}
               roomCapacity={room?.capacity || 0}
               isSelected={
                 Number(roomId) === selectedTimeSlot?.roomId &&
-                date.getDate() === selectedTimeSlot?.day &&
-                hour === selectedTimeSlot?.hour
+                t === selectedTimeSlot?.start
               }
               onClick={clickTimeSlot}
-              startTime={hour}
             />
-          ));
-        })}
-      </div>
-    )
+          );
+        });
+      })}
+    </div>
   );
 
   const dates = getDates(startDay);
