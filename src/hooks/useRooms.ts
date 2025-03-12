@@ -9,11 +9,9 @@ export const useRooms = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('useRooms loading');
         setLoading(true);
         const roomsData = await fetchRooms();
         setRooms(roomsData);
-        console.log('useRooms loaded');
       } catch (error) {
         setError(error as Error);
       } finally {
