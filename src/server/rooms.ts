@@ -14,14 +14,16 @@ export type ListAvailableRoomsResponse = {
   [key: number]: Array<number>;
 };
 
-export async function fetchRooms(): Promise<ListRoomsResponse> {
+export async function fetchRooms(): Promise<ListRoomsResponseItem[]> {
   try {
-    const response = await fetchClient('/rooms/list');
-    if (!response.ok) {
-      throw new Error('Failed to fetch rooms');
+    const body = await fetchClient<ListRoomsResponse>('/rooms/list');
+    if (body.error) {
+      throw new Error(body.message);
     }
-    const rooms = await response.json();
-    return rooms;
+    if (!body.payload) {
+      throw new Error('Failed to get rooms');
+    }
+    return body.payload;
   } catch (error) {
     throw error;
   }
@@ -34,17 +36,42 @@ export async function fetchAvailableTimes(
 ): Promise<ListAvailableRoomsResponse> {
   try {
     const params = new URLSearchParams();
-    if (from) params.append('from', from.toString());
-    if (to) params.append('to', to.toString());
-    if (roomIds && roomIds.length > 0)
-      params.append('roomIds', roomIds.join(','));
 
-    const response = await fetchClient(`/rooms/available?${params.toString()}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch available times');
+    if (from) {
+      const fromStr = Math.floor(from).toString();
+      if (fromStr.length !== 10) {
+        console.warn(
+          'Warning: "from" parameter should be a 10-digit Unix timestamp'
+        );
+      }
+      params.append('from', fromStr);
     }
-    const availableTimes = await response.json();
-    return availableTimes;
+
+    if (to) {
+      const toStr = Math.floor(to).toString();
+      if (toStr.length !== 10) {
+        console.warn(
+          'Warning: "to" parameter should be a 10-digit Unix timestamp'
+        );
+      }
+      params.append('to', toStr);
+    }
+
+    params.append(
+      'roomIds',
+      roomIds && roomIds.length > 0 ? roomIds.join(',') : ''
+    );
+
+    const body = await fetchClient<ListAvailableRoomsResponse>(
+      `/rooms/available?${params.toString()}`
+    );
+    if (body.error) {
+      throw new Error(body.message);
+    }
+    if (!body.payload) {
+      throw new Error('Failed to get available times');
+    }
+    return body.payload;
   } catch (error) {
     throw error;
   }

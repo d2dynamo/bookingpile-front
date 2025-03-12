@@ -5,20 +5,20 @@ import LinkButton from '@/components/LinkButton';
 import Button from '@/components/Button';
 import { ErrorState } from '@/util';
 import { getBooking, updateBooking } from '@/server/booking';
-import { Booking } from '@/server/types';
 
 const BookPage: React.FC = () => {
   const [error, setError] = useState<ErrorState | null>(null);
   const [bookSuccess, setBookSuccess] = useState(false);
   const [reservationName, setReservationName] = useState<string | null>(null);
-  const [bookingData, setBookingData] = useState<Booking | null>(null);
 
   const router = useRouter();
 
   const doBooking = async () => {
     try {
-      if (!bookingData || !bookingData.id) {
-        throw new ErrorState('Booking not initialized');
+      const bookingId = Number(router.query.bookingId);
+
+      if (isNaN(bookingId) || !bookingId) {
+        throw new ErrorState('Invalid booking ID');
       }
 
       if (!reservationName) {
@@ -26,7 +26,7 @@ const BookPage: React.FC = () => {
       }
 
       await updateBooking({
-        bookingId: bookingData.id,
+        bookingId: bookingId,
         reservationName,
         status: 'confirmed',
       });
@@ -48,7 +48,6 @@ const BookPage: React.FC = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        console.log(router.query);
         const bookingId = Number(router.query.bookingId);
 
         if (isNaN(bookingId) || typeof bookingId !== 'number') {
@@ -56,13 +55,8 @@ const BookPage: React.FC = () => {
           router.push('/rooms');
         }
 
-        const result = await getBooking(bookingId);
-        if (!result) {
-          console.error('Failed to get booking:', bookingId);
-          router.push('/rooms');
-        }
-
-        setBookingData(result);
+        // Just make sure the booking exists
+        await getBooking(bookingId);
       } catch (e) {
         if (e instanceof Error) {
           setError(e);
@@ -90,8 +84,8 @@ const BookPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col justify-between items-stretch content-center bg-gray-200 dark:bg-slate-800 min-h-screen max-h-screen w-full">
-      <h1 className="text-3xl font-bold text-black dark:text-white m-4">
+    <div className="flex flex-col justify-center items-stretch content-center bg-gray-200 dark:bg-slate-800 min-h-screen max-h-screen w-full">
+      <h1 className="text-3xl font-bold text-black dark:text-white my-10 self-center">
         Vem bokar?
       </h1>
       <div className="flex flex-col items-center gap-4 p-4">
@@ -105,7 +99,7 @@ const BookPage: React.FC = () => {
             bg-white dark:bg-slate-700 text-black dark:text-white
             placeholder-gray-400 dark:placeholder-gray-500"
         />
-        <Button onClick={() => doBooking()} className="w-full max-w-md">
+        <Button onClick={doBooking} className="w-full max-w-md">
           Boka
         </Button>
       </div>

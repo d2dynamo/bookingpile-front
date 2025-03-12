@@ -136,6 +136,7 @@ const RoomsPage: React.FC = () => {
         setLoading(true);
         const roomsData = await fetchRooms();
         setRooms(roomsData);
+        setSelectedRooms(roomsData.map((room) => room.id));
       } catch (e) {
         if (e instanceof Error) {
           setError(e);
@@ -157,16 +158,13 @@ const RoomsPage: React.FC = () => {
   useEffect(() => {
     const re = async () => {
       try {
-        console.log('fetch availabletimes');
         setLoading(true);
         const sd = new Date(startDay);
-
         const availableTimesData = await fetchAvailableTimes(
           unixSec(sd),
           unixSec(sd.setDate(sd.getDate() + 2)),
           selectedRooms
         );
-        console.log('availableTimesData', availableTimesData);
         setAvailableTimes(availableTimesData);
       } catch (e) {
         if (e instanceof Error) {
@@ -180,7 +178,6 @@ const RoomsPage: React.FC = () => {
         }
       } finally {
         setLoading(false);
-        console.log('refreshed availableTimes');
       }
     };
     re();

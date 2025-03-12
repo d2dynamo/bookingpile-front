@@ -10,7 +10,7 @@ interface CreateBookingResponse {
   bookingId: number;
 }
 
-interface UpdateBooking {
+interface UpdateBookingRequest {
   bookingId: number;
   status?: BookingStatus;
   reservationName?: string;
@@ -26,11 +26,14 @@ interface Booking {
 
 export async function getBooking(bookingId: number): Promise<Booking> {
   try {
-    const response = await fetchClient(`/booking/get/${bookingId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch booking');
+    const body = await fetchClient<Booking>(`/booking/${bookingId}`);
+    if (body.error) {
+      throw new Error(body.message);
     }
-    const booking = await response.json();
+    if (!body.payload) {
+      throw new Error('Failed to get booking');
+    }
+    const booking = body.payload;
     return booking;
   } catch (error) {
     throw error;
@@ -41,42 +44,43 @@ export async function createBooking(
   booking: CreateBookingRequest
 ): Promise<CreateBookingResponse> {
   try {
-    const response = await fetchClient('/booking/create', {
+    const body = await fetchClient<CreateBookingResponse>('/booking/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(booking),
     });
-
-    if (response.status < 200 || response.status >= 400) {
-      throw new Error(await response.text());
+    if (body.error) {
+      throw new Error(body.message);
     }
-    const body = await response.json();
-
-    if (!body.bookingId) {
-      throw new Error('Failed to create booking, no bookingId returned');
+    if (!body.payload || typeof body.payload.bookingId !== 'number') {
+      throw new Error('Failed to create booking');
     }
-
-    return { bookingId: body.bookingId };
+    return { bookingId: body.payload.bookingId };
   } catch (error) {
+    console.error('Error creating booking:', error);
     throw error;
   }
 }
-
-export async function updateBooking(input: UpdateBooking): Promise<void> {
+export async function updateBooking(
+  input: UpdateBookingRequest
+): Promise<void> {
   try {
-    const response = await fetchClient('/booking/update', {
+    const body = await fetchClient('/booking/update', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(input),
     });
-    if (!response.ok) {
-      throw new Error('Failed to update booking status');
+    if (body.error) {
+      throw new Error(body.message);
     }
+
+    return;
   } catch (error) {
+    console.error('Error updating booking status:', error);
     throw error;
   }
 }

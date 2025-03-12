@@ -44,3 +44,8 @@ export interface Booking {
   status: BookingStatus;
   reservationName?: string;
 }
+export interface APIResponseBody<T> {
+  error: boolean;
+  message: string;
+  payload?: T;
+}
